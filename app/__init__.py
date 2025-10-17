@@ -33,23 +33,24 @@ def create_app():
     jwt.init_app(app)
     cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
     
-    # Register blueprints
-    from app.routes.auth import auth_bp
-    from app.routes.destinations import destinations_bp
-    from app.routes.weather import weather_bp
-    from app.routes.favorites import favorites_bp
-    from app.routes.recommendations import recommendations_bp
+    # Import and register blueprints
+    try:
+        from app.routes.auth import auth_bp
+        from app.routes.destinations import destinations_bp
+        from app.routes.weather import weather_bp
+        from app.routes.favorites import favorites_bp
+        
+        app.register_blueprint(auth_bp, url_prefix='/api/auth')
+        app.register_blueprint(destinations_bp, url_prefix='/api/destinations')
+        app.register_blueprint(weather_bp, url_prefix='/api/weather')
+        app.register_blueprint(favorites_bp, url_prefix='/api/favorites')
+    except ImportError as e:
+        print(f"Warning: Could not import blueprints: {e}")
     
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(destinations_bp, url_prefix='/api/destinations')
-    app.register_blueprint(weather_bp, url_prefix='/api/weather')
-    app.register_blueprint(favorites_bp, url_prefix='/api/favorites')
-    app.register_blueprint(recommendations_bp, url_prefix='/api/recommendations')
-    
-    # Health check endpoint
+    # Routes
     @app.route('/')
     def home():
-        return {'status': 'healthy', 'message': 'Klymates backend is running'}
+        return {'status': 'healthy', 'message': 'Klymates API is running'}
     
     @app.route('/api/health')
     def health_check():

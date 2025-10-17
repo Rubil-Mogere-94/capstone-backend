@@ -6,7 +6,7 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       python init_db.py
-    startCommand: gunicorn wsgi:app
+    startCommand: gunicorn app:app
     envVars:
       - key: DATABASE_URL
         fromDatabase:
