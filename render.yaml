@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn run:app
+    startCommand: gunicorn "app:create_app()"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
