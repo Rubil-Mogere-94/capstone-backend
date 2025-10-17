@@ -2,6 +2,7 @@ services:
   - type: web
     name: klymates-backend
     env: python
+    pythonVersion: '3.11.4'
     plan: free
     buildCommand: |
       pip install -r requirements.txt
