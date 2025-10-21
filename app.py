@@ -101,5 +101,9 @@ def location_search():
     )
     return jsonify(response.json())
 
+@app.route("/")
+def hello():
+    return "Hello from the backend!"
+
 if __name__ == "__main__":
     app.run(port=5001, debug=True)
