@@ -43,6 +43,11 @@ def get_destination_details(city_name):
             print(f"Nominatim API returned no results or unexpected format for {city_name}")
             return None
 
+        # Check if the first result has the expected keys
+        if 'lat' not in nominatim_res[0] or 'lon' not in nominatim_res[0]:
+            print(f"Nominatim API result missing 'lat' or 'lon' for {city_name}")
+            return None
+
         lat = nominatim_res[0]['lat']
         lon = nominatim_res[0]['lon']
 
@@ -64,7 +69,7 @@ def get_destination_details(city_name):
         print(f"Network or API error fetching details for {city_name}: {e}")
         return None
     except (KeyError, IndexError) as e:
-        print(f"Data parsing error for {city_name} from external APIs: {e}")
+        print(f"Data parsing error for {city_name} from external APIs: {e}. Response might be malformed or missing expected keys.")
         return None
     except Exception as e:
         print(f"An unexpected error occurred fetching details for {city_name}: {e}")
@@ -81,7 +86,7 @@ def search_destinations():
     query = request.args.get('q', '').strip()
 
     if not validate_search_query(query):
-        return jsonify({"error": "Invalid search query"}), 400
+        return jsonify({"error": "Invalid search query. Query must be alphanumeric, spaces, commas, or hyphens, and less than 100 characters."}), 400
 
     details = get_destination_details(query)
     if details:
