@@ -10,12 +10,69 @@ from functools import wraps
 # Firebase Admin SDK imports
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+from functools import wraps
+
+# Firebase Admin SDK imports
+import firebase_admin
+from firebase_admin import credentials, firestore, auth
 
 load_dotenv()
 LOCATIONIQ_TOKEN = os.getenv("LOCATIONIQ_TOKEN")
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
+
+# --- Firebase Admin SDK Initialization ---
+db = None
+try:
+    # Prioritize environment variable for service account key
+    firebase_service_account_key_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY")
+    if firebase_service_account_key_json:
+        # If it's a JSON string, parse it
+        cred = credentials.Certificate(json.loads(firebase_service_account_key_json))
+        firebase_admin.initialize_app(cred)
+        print("Firebase Admin SDK initialized using environment variable.")
+    elif os.path.exists("serviceAccountKey.json"):
+        # Fallback to local file for development
+        cred = credentials.Certificate("serviceAccountKey.json")
+        firebase_admin.initialize_app(cred)
+        print("Firebase Admin SDK initialized using serviceAccountKey.json.")
+    else:
+        print("Firebase Admin SDK not initialized: No service account key found.")
+except Exception as e:
+    print(f"Error initializing Firebase Admin SDK: {e}")
+
+if firebase_admin._apps: # Check if app was initialized
+    db = firestore.client()
+    print("Firestore client initialized.")
+else:
+    print("Firestore client not initialized because Firebase Admin SDK failed to initialize.")
+
+# --- Firebase ID Token Verification Middleware ---
+def verify_firebase_token(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not firebase_admin._apps:
+            return jsonify({"message": "Firebase Admin SDK not initialized."}), 500
+
+        id_token = request.headers.get('Authorization')
+        if not id_token:
+            return jsonify({"message": "Authorization token required"}), 401
+        
+        # Expecting "Bearer <token>"
+        if id_token.startswith('Bearer '):
+            id_token = id_token.split('Bearer ')[1]
+        else:
+            return jsonify({"message": "Invalid Authorization header format"}), 401
+
+        try:
+            decoded_token = auth.verify_id_token(id_token)
+            request.uid = decoded_token['uid']
+            return f(*args, **kwargs)
+        except Exception as e:
+            print(f"Firebase token verification failed: {e}")
+            return jsonify({"message": "Invalid or expired token"}), 403
+    return decorated_function
 
 # --- Firebase Admin SDK Initialization ---
 db = None
@@ -162,6 +219,65 @@ def location_search():
         headers=headers
     )
     return jsonify(response.json())
+
+@app.route("/api/location/search", methods=["GET"])
+def location_search():
+    query = request.args.get('q')
+    token = os.getenv("LOCATIONIQ_TOKEN")
+
+    headers = {'User-Agent': 'CapstoneFrontend/1.0'} # Custom User-Agent
+    response = requests.get(
+        f'https://us1.locationiq.com/v1/search.php?key={token}&q={query}&format=json',
+        headers=headers
+    )
+    return jsonify(response.json())
+
+# --- User Preferences API Endpoints ---
+@app.route("/api/user/preferences", methods=["GET"])
+@verify_firebase_token
+def get_user_preferences():
+    if not db:
+        return jsonify({"message": "Firestore client not available."}), 500
+    
+    uid = request.uid
+    doc_ref = db.collection('user_preferences').document(uid)
+    doc = doc_ref.get()
+
+    if doc.exists:
+        return jsonify(doc.to_dict()), 200
+    else:
+        return jsonify({}), 200 # Return empty object if no preferences found
+
+@app.route("/api/user/preferences", methods=["POST", "PUT"])
+@verify_firebase_token
+def update_user_preferences():
+    if not db:
+        return jsonify({"message": "Firestore client not available."}), 500
+
+    uid = request.uid
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"message": "Request body must be JSON"}), 400
+
+    doc_ref = db.collection('user_preferences').document(uid)
+    try:
+        doc_ref.set(data, merge=True)
+        return jsonify({"message": "Preferences updated successfully"}), 200
+    except Exception as e:
+        print(f"Error updating user preferences for {uid}: {e}")
+        return jsonify({"message": "Failed to update preferences"}), 500
+
+# --- Conceptual Recent Activity API Endpoint ---
+@app.route("/api/user/activity", methods=["GET"])
+@verify_firebase_token
+def get_user_activity():
+    # This is a placeholder for future functionality
+    mock_activity_data = [
+        {"id": "1", "type": "destination_view", "details": "Paris", "timestamp": "2025-10-22T10:00:00Z"},
+        {"id": "2", "type": "preference_update", "details": "Theme changed to dark", "timestamp": "2025-10-22T09:30:00Z"},
+    ]
+    return jsonify(mock_activity_data), 200
 
 @app.route("/api/location/search", methods=["GET"])
 def location_search():
