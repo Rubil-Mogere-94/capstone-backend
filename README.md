@@ -2,33 +2,35 @@
 
 This is the backend for the Capstone project, built with Flask.
 
-## Deployment on Render
+## Getting Started
 
-This backend is designed to be deployed on Render. Follow these steps:
+### Prerequisites
 
-1.  **Create a new Web Service on Render:**
-    *   Connect your GitHub repository containing this backend code.
-    *   Select "Python" as the runtime.
-2.  **Build Command:**
-    `pip install -r requirements.txt`
-3.  **Start Command:**
-    `gunicorn app:app`
-4.  **Environment Variables:**
-    *   Set the `LOCATIONIQ_TOKEN` environment variable in the Render dashboard. This token is crucial for the LocationIQ API.
-    *   Any other environment variables defined in your local `.env` file should also be added to Render's environment settings.
+*   Python 3
+*   pip
 
-## Local Development
+### Installation
 
-1.  **Create a virtual environment:**
-    `python3 -m venv venv`
-2.  **Activate the virtual environment:**
-    `source venv/bin/activate`
-3.  **Install dependencies:**
-    `pip install -r requirements.txt`
-4.  **Create a `.env` file:**
-    Create a file named `.env` in the `backend` directory and add your `LOCATIONIQ_TOKEN` (and any other necessary environment variables) to it:
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/Rubil-Mogere-94/capstone-backend.git
     ```
-    LOCATIONIQ_TOKEN="your_locationiq_token_here"
+2.  Install the dependencies:
+    ```bash
+    pip install -r requirements.txt
     ```
-5.  **Run the application:**
-    `flask run --port 5001`
+
+### Environment Variables
+
+Create a `.env` file in the root of the project and add the following environment variables:
+
+```
+LOCATIONIQ_TOKEN="your_locationiq_token_here"
+FIREBASE_SERVICE_ACCOUNT_KEY="your_firebase_service_account_key_here"
+```
+
+### Running the Application
+
+```bash
+flask run --port 5001
+```
