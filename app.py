@@ -282,5 +282,25 @@ def hello():
 with app.app_context():
     db_sql.create_all()
 
+@app.route("/api/forum/posts/<int:post_id>", methods=["DELETE"])
+def delete_post(post_id):
+    try:
+        id_token = request.headers.get("Authorization").split("Bearer ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token["uid"]
+    except Exception as e:
+        return jsonify({"error": "Unauthorized", "message": str(e)}), 401
+
+    post = next((post for post in posts if post["id"] == post_id), None)
+
+    if post is None:
+        return jsonify({"error": "Post not found"}), 404
+
+    if post["author_uid"] != uid:
+        return jsonify({"error": "Forbidden"}), 403
+
+    posts.remove(post)
+    return "", 204
+
 if __name__ == "__main__":
-    app.run(port=5001, debug=True)
+    app.run(debug=True, port=5001)
